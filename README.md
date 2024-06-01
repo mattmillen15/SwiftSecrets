@@ -21,3 +21,6 @@ ___
 SwiftSecrets.py -tf <TARGET_FILE< -d <DOMAIN> -u <USERNAME> -p <PASSWORD? [-o OUTPUT]
 ```
 ___
+
+# Credit
+Really created this just to simplify and streamline processes that I perform manually on each assessment. The main idea behind this, a Multi-threaded Secretsdump using python's concurrent.futures.ThreadPoolExecutor, was an idea an old co-worker put into action here: https://github.com/fin3ss3g0d/secretsdump.py
