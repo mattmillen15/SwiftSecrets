@@ -20,6 +20,10 @@ ___
 ```zsh
 SwiftSecrets.py -tf <TARGET_FILE< -d <DOMAIN> -u <USERNAME> -p <PASSWORD? [-o OUTPUT]
 ```
+![image](https://github.com/mattmillen15/SwiftSecrets/assets/68832392/63175347-c940-44f7-80b7-3c39f8ca7b27)
+___
+![image](https://github.com/mattmillen15/SwiftSecrets/assets/68832392/ab7757b8-3197-46fd-9379-fa7e5fa7e113)
+
 ___
 
 # Credit
