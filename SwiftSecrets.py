@@ -87,6 +87,12 @@ def main():
         print("[!] Operation aborted by the user.")
         sys.exit(0)
 
+    # Confirm with the user about the risk of mass host quarantine
+    confirmation = input(f"[*] ...more importantly --> have you tested Secretsdump against single hosts to make sure you're not about to spark up a mass quarantine of all domain hosts? (Y/N): ").strip().lower()
+    if confirmation != 'y':
+        print("[!] Better to double check just to make sure you don't make a boo-boo.")
+        sys.exit(0)
+        
     # Check if output directory is provided and writable
     output_dir = args.output if args.output else os.path.join(os.getcwd(), "Secretsdump_Output")
     if not os.path.exists(output_dir):
