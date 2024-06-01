@@ -24,3 +24,5 @@ ___
 
 # Credit
 Really created this just to simplify and streamline processes that I perform manually on each assessment. The main idea behind this, a Multi-threaded Secretsdump using python's concurrent.futures.ThreadPoolExecutor, was an idea an old co-worker put into action here: https://github.com/fin3ss3g0d/secretsdump.py
+
+Also the clear hero here is everyone involved in the Impacket project... active repo is here: https://github.com/fortra/impacket/tree/master
