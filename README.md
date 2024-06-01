@@ -8,7 +8,7 @@ This script will:
 - Take a list of hostnames as input. This is the true intention as client's want hostnames, not IP addresses, when reporting identified vulnerabilities.
 - Warns the user about potential for account lockout risks and device quarantine before starting.
 - Use a quick NMAP check to find live hosts in that list as to prevent delays due to unreachable hosts.
-- Perform multi-threaded execution of Impacket's Secretsdump.py tool using Python's concurrent.futures.ThreadPoolExecutor for efficiency.
+- Perform multi-threaded execution of Impacket's Secretsdump.py tool using Python's concurrent.futures.ThreadPoolExecutor for efficiency. (Note: This tool is hardcoded to run secretsdump.py ... not impacket-secretsdump... cause I made it for me, not you...)
 - Provides a progress bar to monitor the execution status in real time.
 - Log detailed execution output and errors to a file for later review.
 - Output results to a specified directory, with a default option if none is provided.
