@@ -82,7 +82,7 @@ def main():
     args = parser.parse_args()
 
     # Confirm with the user about the risk of locking out the account
-    confirmation = input(f"[*] User, you are about to perform large amounts of authentication attempts with the user {args.username}. Are you cool with the potential of locking out this account? (Y/N): ").strip().lower()
+    confirmation = input(f"[*] User, you are about to perform large amounts of authentication attempts with the user "{args.username}". Are you cool with the potential of locking out this account? (Y/N): ").strip().lower()
     if confirmation != 'y':
         print("[!] Operation aborted by the user.")
         sys.exit(0)
