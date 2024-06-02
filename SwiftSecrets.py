@@ -69,8 +69,13 @@ def check_live_hosts(hosts):
 
 def run_secretsdump(host, domain, username, password, output_dir):
     output_file = os.path.join(output_dir, f"{host}.secretsdump")
+    secretsdump_cmd = shutil.which("secretsdump.py") or shutil.which("impacket-secretsdump")
+    if not secretsdump_cmd:
+        logging.error("[!] Neither secretsdump.py nor impacket-secretsdump is available in PATH.")
+        return f"[!] Neither secretsdump.py nor impacket-secretsdump is available in PATH."
+    
     cmd = [
-        "secretsdump.py",
+        secretsdump_cmd,
         f"{domain}/{username}:{password}@{host}",
         "-outputfile", output_file
     ]
