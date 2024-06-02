@@ -1,3 +1,5 @@
+argparse
 tqdm
-impacket
-nmap
+logging
+dnspython
+concurrent.futures
