@@ -15,7 +15,7 @@ This script will:
 ___
 
 # Usage:
-**Do I really need to say be careful.....? Before running a mass secretsdump be sure that their EDR isn't going to quarantine these hosts.....*
+**Do I really need to say be careful...? Before running a mass secretsdump be sure that the client's EDR isn't going to quarantine the target hosts...*
 
 ```zsh
 SwiftSecrets.py -tf <TARGET_FILE< -d <DOMAIN> -u <USERNAME> -p <PASSWORD? [-o OUTPUT]
