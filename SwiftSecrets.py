@@ -7,6 +7,7 @@ import re
 from tqdm import tqdm
 import dns.resolver
 import concurrent.futures
+import shutil
 
 # Setup logging to file, ensuring it appends each time the tool runs
 logging.basicConfig(filename='dumper.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', filemode='a')
