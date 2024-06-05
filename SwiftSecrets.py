@@ -176,7 +176,7 @@ def main():
         logging.error("[!] Hostname resolution failed!")
         sys.exit(1)
     
-    print("[+] Checking live hosts...")
+    print("[+] Checking for live SMB hosts...")
     live_hosts = check_live_hosts(args.target_file)
     if not live_hosts:
         print("[!] Error: No live hosts detected!")
