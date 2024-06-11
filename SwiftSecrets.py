@@ -13,7 +13,7 @@ import shutil
 logging.basicConfig(filename='dumper.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', filemode='a')
 
 def is_valid_hostname(hostname):
-    return re.match(r'^[a-zA-Z0-9][a-zA-Z0-9\.-]{1,253}[a-zA-Z0-9]$', hostname) is not None
+    return re.match(r'^[a-zA-Z0-9][a-zA-Z0-9\._-]{1,253}[a-zA-Z0-9]$', hostname) is not None
 
 def resolve_hostnames(hosts, name_server):
     resolved_hosts = {}
